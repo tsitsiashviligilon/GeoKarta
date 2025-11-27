@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoKarta Prototype</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: #000;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 414px;
+      height: 100vh;
+      max-height: 896px;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      background: #000;
+    }
+
+    .screen.active {
+      display: flex;
+    }
+
+    .map-header {
+      position: relative;
+      height: 60%;
+      overflow: hidden;
+    }
+
+    .map-header img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* «чёлка» телефона */
+    .notch {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 8px;
+      width: 80px;
+      height: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .content-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 16px 16px 24px;
+      background: #101010;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+    }
+
+    .sheet-title {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .field-group {
+      border-radius: 18px;
+      overflow: hidden;
+      background: #3b3b3b;
+      margin-bottom: 14px;
+    }
+
+    .field-row {
+      padding: 10px 14px;
+      border-bottom: 1px solid #5a5a5a;
+      font-size: 14px;
+    }
+
+    .field-row:last-child {
+      border-bottom: none;
+    }
+
+    .field-label {
+      color: #d0d0d0;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .field-value {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-value span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .small-link {
+      font-size: 11px;
+      color: #aaa;
+    }
+
+    .card-option {
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 18px;
+      background: #505050;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.05s ease;
+    }
+
+    .card-option.selected {
+      background: #f4472e;
+    }
+
+    .card-option:active {
+      transform: translateY(1px) scale(0.99);
+    }
+
+    .card-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+      background: #2f2f2f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      font-size: 22px;
+    }
+
+    .card-text-main {
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+
+    .card-text-sub {
+      font-size: 11px;
+      color: #c0c0c0;
+    }
+
+    .primary-btn {
+      margin-top: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 0;
+      font-size: 16px;
+      font-weight: 600;
+      background: #f44336;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(244, 67, 54, 0.6);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .primary-btn:active {
+      transform: translateY(2px) scale(0.98);
+      box-shadow: 0 4px 10px rgba(244, 67, 54, 0.5);
+      filter: brightness(0.97);
+    }
+
+    .top-bar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 5;
+    }
+
+    .circle-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 16px;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      transition: transform 0.08s ease, background 0.15s ease;
+    }
+
+    .circle-btn:active {
+      transform: translateY(1px) scale(0.96);
+      background: rgba(0,0,0,0.9);
+    }
+
+    /* экран 2 – карточка ресторана */
+
+    .place-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 18px 16px 24px;
+      background: #101010;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+    }
+
+    .place-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .place-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .place-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 22px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #2b8f3a;
+      font-weight: 700;
+    }
+
+    .place-name {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .place-type {
+      font-size: 13px;
+      color: #c0c0c0;
+    }
+
+    .fav-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 20px;
+      border: none;
+      background: #f4472e;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 20px;
+      transition: transform 0.08s ease, filter 0.15s ease;
+    }
+
+    .fav-btn:active {
+      transform: translateY(1px) scale(0.96);
+      filter: brightness(0.95);
+    }
+
+    .section-title {
+      font-size: 15px;
+      margin: 10px 0 6px;
+    }
+
+    .photos-row {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+    }
+
+    .photo-card {
+      min-width: 110px;
+      height: 130px;
+      border-radius: 18px;
+      overflow: hidden;
+      background: #2d2d2d;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .photo-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .about-box {
+      margin-top: 4px;
+      padding: 10px 12px;
+      border-radius: 16px;
+      background: #3b3b3b;
+      font-size: 13px;
+      line-height: 1.35;
+      cursor: pointer;
+    }
+
+    .cashback-card {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 18px;
+      background: #262626;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+
+    .cashback-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .cashback-logo {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: #e53935;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .cashback-text {
+      font-size: 13px;
+    }
+
+    .cashback-badge {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #ff6f00;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .route-btn {
+      margin-top: 14px;
+    }
+
+    /* экран 3 – карта с поиском */
+
+    .search-sheet {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 14px 16px 22px;
+      background: #101010;
+      border-radius: 24px 24px 0 0;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+    }
+
+    .search-input {
+      display: flex;
+      align-items: center;
+      background: #303030;
+      border-radius: 999px;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+    }
+
+    .search-input span {
+      font-size: 14px;
+      color: #c0c0c0;
+      margin-left: 6px;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #303030;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .chip.active {
+      background: #f4472e;
+    }
+
+    .list-title {
+      font-size: 13px;
+      color: #b0b0b0;
+      margin-bottom: 6px;
+    }
+
+    .place-list {
+      max-height: 260px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid #2f2f2f;
+      cursor: pointer;
+    }
+
+    .list-item:last-child {
+      border-bottom: none;
+    }
+
+    .list-main {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .list-logo {
+      width: 34px;
+      height: 34px;
+      border-radius: 17px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #111;
+    }
+
+    .list-name {
+      font-size: 14px;
+    }
+
+    .list-address {
+      font-size: 12px;
+      color: #b0b0b0;
+    }
+
+    .list-distance {
+      font-size: 12px;
+      color: #b0b0b0;
+      text-align: right;
+      min-width: 70px;
+    }
+
+    /* простая подсказка */
+    .toast {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 16px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      font-size: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 20;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+
+    <!-- ЭКРАН 3: карта + поиск (стартовый) -->
+    <section class="screen active" id="screen-map-list">
+      <div class="map-header">
+        <!-- ЗАМЕНИ src на свой скрин карты для этого экрана -->
+        <img src="map-list.jpg" alt="Карта" />
+        <div class="top-bar">
+          <div class="circle-btn" data-click="logo">⤺</div>
+          <div class="circle-btn" data-click="close">✕</div>
+        </div>
+        <div class="notch"></div>
+      </div>
+
+      <div class="search-sheet">
+        <div class="search-input" data-click="search">
+          🔍 <span>Поиск</span>
+        </div>
+
+        <div class="chip-row">
+          <div class="chip" data-click="chip">Кухня</div>
+          <div class="chip active" data-click="chip">Работает сейчас</div>
+          <div class="chip" data-click="chip">Кэшбэк</div>
+        </div>
+
+        <div class="list-title">В радиусе 3 км</div>
+
+        <div class="place-list">
+          <div class="list-item" data-go="screen-place">
+            <div class="list-main">
+              <div class="list-logo">OM</div>
+              <div>
+                <div class="list-name">Osteria Mario</div>
+                <div class="list-address">Проспект Вернадского 6</div>
+              </div>
+            </div>
+            <div class="list-distance">800 м</div>
+          </div>
+
+          <div class="list-item" data-go="screen-place">
+            <div class="list-main">
+              <div class="list-logo">B</div>
+              <div>
+                <div class="list-name">Бутчер</div>
+                <div class="list-address">Мичуринский проспект 8с2</div>
+              </div>
+            </div>
+            <div class="list-distance">1.7 км</div>
+          </div>
+
+          <div class="list-item" data-click="place-other">
+            <div class="list-main">
+              <div class="list-logo">FB</div>
+              <div>
+                <div class="list-name">Frank by Баста</div>
+                <div class="list-address">Мичуринский проспект</div>
+              </div>
+            </div>
+            <div class="list-distance">2 км</div>
+          </div>
+
+          <div class="list-item" data-click="place-other">
+            <div class="list-main">
+              <div class="list-logo">A</div>
+              <div>
+                <div class="list-name">Альма</div>
+                <div class="list-address">Раменский бульвар 1</div>
+              </div>
+            </div>
+            <div class="list-distance">2.2 км</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ЭКРАН 2: карточка ресторана Бутчер -->
+    <section class="screen" id="screen-place">
+      <div class="map-header">
+        <!-- фон карты для этого экрана -->
+        <img src="map-place.jpg" alt="Карта" />
+        <div class="top-bar">
+          <div class="circle-btn" data-go="screen-map-list">←</div>
+          <div class="circle-btn" data-click="map-center">◎</div>
+        </div>
+        <div class="notch"></div>
+      </div>
+
+      <div class="place-sheet">
+        <div class="place-header">
+          <div class="place-info">
+            <div class="place-logo">B</div>
+            <div>
+              <div class="place-name">Бутчер</div>
+              <div class="place-type">Стейкхаус</div>
+            </div>
+          </div>
+          <button class="fav-btn" id="favBtn">♡</button>
+        </div>
+
+        <div class="section-title">Фото</div>
+        <div class="photos-row">
+          <div class="photo-card" data-click="photo">
+            <img src="butcher-1.jpg" alt="Фото 1" />
+          </div>
+          <div class="photo-card" data-click="photo">
+            <img src="butcher-2.jpg" alt="Фото 2" />
+          </div>
+          <div class="photo-card" data-click="photo">
+            <img src="butcher-3.jpg" alt="Фото 3" />
+          </div>
+        </div>
+
+        <div class="section-title">О месте</div>
+        <div class="about-box" data-click="about">
+          Ресторан «Стейк Хаус Бутчер» — это идеальное место для тех, кто любит стейки и хорошую кухню. Здесь вы можете попробовать различные виды стейков и авторские блюда.
+        </div>
+
+        <div class="cashback-card" data-click="cashback">
+          <div class="cashback-left">
+            <div class="cashback-logo">A</div>
+            <div class="cashback-text">Кэшбэк по Альфа-карте</div>
+          </div>
+          <div class="cashback-badge">3%</div>
+        </div>
+
+        <button class="primary-btn route-btn" data-go="screen-route">
+          Построить маршрут
+        </button>
+      </div>
+    </section>
+
+    <!-- ЭКРАН 1: построить маршрут -->
+    <section class="screen" id="screen-route">
+      <div class="map-header">
+        <!-- карта с маршрутом -->
+        <img src="map-route.jpg" alt="Маршрут" />
+        <div class="top-bar">
+          <div class="circle-btn" data-go="screen-place">←</div>
+          <div class="circle-btn" data-click="locate">◎</div>
+        </div>
+        <div class="notch"></div>
+      </div>
+
+      <div class="content-sheet">
+        <div class="sheet-title">Построить маршрут</div>
+
+        <div class="field-group" data-click="from-to">
+          <div class="field-row">
+            <div class="field-label">Откуда:</div>
+            <div class="field-value">
+              <span>Моё местоположение</span>
+              <span class="small-link">Изменить</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-label">Куда:</div>
+            <div class="field-value">
+              <span>Бутчер</span>
+              <span class="small-link">Заменить</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-option selected" data-mode="car">
+          <div class="card-icon">🚗</div>
+          <div>
+            <div class="card-text-main">На машине</div>
+            <div class="card-text-sub">8 минут · 1.7 км</div>
+          </div>
+        </div>
+
+        <div class="card-option" data-mode="public">
+          <div class="card-icon">🚌</div>
+          <div>
+            <div class="card-text-main">На общественном транспорте</div>
+            <div class="card-text-sub">14 минут</div>
+          </div>
+        </div>
+
+        <div class="card-option" data-mode="walk">
+          <div class="card-icon">🚶</div>
+          <div>
+            <div class="card-text-main">Пешком</div>
+            <div class="card-text-sub">27 минут</div>
+          </div>
+        </div>
+
+        <button class="primary-btn" id="goBtn">
+          В путь
+        </button>
+      </div>
+    </section>
+
+    <div class="toast" id="toast">Кнопка нажата</div>
+  </div>
+
+  <script>
+    const screens = document.querySelectorAll('.screen');
+    const toast = document.getElementById('toast');
+
+    function showScreen(id) {
+      screens.forEach(s => s.classList.toggle('active', s.id === id));
+    }
+
+    function showToast(text) {
+      toast.textContent = text;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1300);
+    }
+
+    // навигация по data-go
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-go]');
+      if (target) {
+        const screenId = target.getAttribute('data-go');
+        showScreen(screenId);
+      }
+    });
+
+    // любые "кнопки" с data-click
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-click]');
+      if (!target) return;
+      const type = target.getAttribute('data-click');
+      if (type === 'chip') {
+        document.querySelectorAll('.chip').forEach(ch => ch.classList.remove('active'));
+        target.classList.add('active');
+        showToast('Фильтр: ' + target.textContent.trim());
+      } else if (type === 'search') {
+        showToast('Откроется поиск');
+      } else if (type === 'place-other') {
+        showToast('Это демонстрационная карточка');
+      } else if (type === 'photo') {
+        showToast('Открыть галерею фото');
+      } else if (type === 'about') {
+        showToast('Открыть подробное описание');
+      } else if (type === 'cashback') {
+        showToast('Детали кэшбэка');
+      } else if (type === 'from-to') {
+        showToast('Изменение точки маршрута');
+      } else if (type === 'logo' || type === 'close' || type === 'map-center' || type === 'locate') {
+        showToast('Действие: ' + type);
+      }
+    });
+
+    // выбор режима маршрута
+    document.querySelectorAll('.card-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.card-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        const mode = opt.getAttribute('data-mode');
+        showToast('Режим: ' + (mode === 'car' ? 'машина' : mode === 'public' ? 'транспорт' : 'пешком'));
+      });
+    });
+
+    // кнопка В путь
+    document.getElementById('goBtn').addEventListener('click', () => {
+      showToast('Маршрут построен (демо)');
+    });
+
+    // избранное
+    const favBtn = document.getElementById('favBtn');
+    favBtn.addEventListener('click', () => {
+      if (favBtn.textContent === '♡') {
+        favBtn.textContent = '♥';
+        showToast('Добавлено в избранное');
+      } else {
+        favBtn.textContent = '♡';
+        showToast('Удалено из избранного');
+      }
+    });
+  </script>
+</body>
+</html>
