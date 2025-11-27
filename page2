@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoKarta + Калькулятор</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      background: #f5f5f8;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 480px;
+      padding: 20px 16px 40px;
+    }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+      text-align: left;
+    }
+
+    .hero img {
+      width: 100%;
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+      object-fit: cover;
+    }
+
+    .hero ul {
+      list-style: disc;
+      padding-left: 20px;
+      font-size: 15px;
+      line-height: 1.4;
+      width: 100%;
+    }
+
+    .hero li + li {
+      margin-top: 6px;
+    }
+
+    .hero button {
+      margin-top: 8px;
+      width: 100%;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 0;
+      font-size: 16px;
+      font-weight: 500;
+      background: #ff7a2f;
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(255, 122, 47, 0.4);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .hero button:active {
+      transform: translateY(2px) scale(0.98);
+      box-shadow: 0 4px 10px rgba(255, 122, 47, 0.35);
+      filter: brightness(0.97);
+    }
+
+    /* Калькулятор */
+
+    .calculator-wrapper {
+      margin-top: 28px;
+      display: none; /* изначально скрыт */
+      justify-content: center;
+    }
+
+    .calculator {
+      background: #fdf5ea;
+      border-radius: 32px;
+      padding: 26px 24px 28px;
+      max-width: 320px;
+      width: 100%;
+      box-shadow:
+        0 26px 40px rgba(0, 0, 0, 0.08),
+        0 4px 6px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .display {
+      background: #cbe5e8;
+      border-radius: 22px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      font-size: 36px;
+      font-weight: 500;
+      color: #2b2b2b;
+      box-shadow:
+        inset 0 2px 4px rgba(255, 255, 255, 0.8),
+        inset 0 -3px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    button.calc-btn {
+      border: none;
+      border-radius: 50%;
+      height: 56px;
+      font-size: 20px;
+      cursor: pointer;
+      outline: none;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-pill {
+      border-radius: 999px;
+      padding: 0 20px;
+      text-align: center;
+    }
+
+    .btn-light {
+      background: #fff7ec;
+      color: #404040;
+      box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.12),
+        0 0 0 1px rgba(255, 255, 255, 0.7);
+    }
+
+    .btn-orange {
+      background: #ffa43a;
+      color: #ffffff;
+      box-shadow:
+        0 5px 10px rgba(255, 140, 0, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.6);
+    }
+
+    .btn-function {
+      background: #ffe6c5;
+      color: #c25a1d;
+      font-size: 16px;
+      box-shadow:
+        0 4px 8px rgba(0, 0, 0, 0.08),
+        0 0 0 1px rgba(255, 255, 255, 0.7);
+    }
+
+    button.calc-btn:active {
+      transform: translateY(2px) scale(0.97);
+      box-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.15),
+        0 0 0 1px rgba(255, 255, 255, 0.6);
+      filter: brightness(0.98);
+    }
+
+    .zero-wide {
+      grid-column: span 2;
+      border-radius: 999px;
+      justify-self: stretch;
+    }
+
+    @media (max-width: 420px) {
+      .calculator {
+        max-width: 290px;
+        padding: 22px 20px 24px;
+      }
+      .display {
+        font-size: 30px;
+      }
+      button.calc-btn {
+        height: 52px;
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Картинка + буллеты + кнопка -->
+    <section class="hero">
+      <!-- page1.png должен лежать в корне репозитория GeoKarta -->
+      <img src="page1.png" alt="GeoKarta">
+
+      <ul>
+        <li>Первое ключевое преимущество или описание сервиса.</li>
+        <li>Второй пункт — кратко о функционале или выгоде.</li>
+        <li>Третий пункт — что пользователь получит в итоге.</li>
+      </ul>
+
+      <button id="showCalcBtn">Открыть калькулятор</button>
+    </section>
+
+    <!-- Калькулятор (появляется после клика по кнопке) -->
+    <section class="calculator-wrapper" id="calculatorSection">
+      <div class="calculator">
+        <div class="display" id="display">0</div>
+
+        <div class="buttons">
+          <!-- верхний ряд -->
+          <button class="calc-btn btn-function" data-action="clear">AC</button>
+          <button class="calc-btn btn-function" data-action="sign">±</button>
+          <button class="calc-btn btn-function" data-action="delete">DEL</button>
+          <button class="calc-btn btn-orange" data-operation="/">÷</button>
+
+          <!-- 2 ряд -->
+          <button class="calc-btn btn-light" data-number="7">7</button>
+          <button class="calc-btn btn-light" data-number="8">8</button>
+          <button class="calc-btn btn-light" data-number="9">9</button>
+          <button class="calc-btn btn-orange" data-operation="*">×</button>
+
+          <!-- 3 ряд -->
+          <button class="calc-btn btn-light" data-number="4">4</button>
+          <button class="calc-btn btn-light" data-number="5">5</button>
+          <button class="calc-btn btn-light" data-number="6">6</button>
+          <button class="calc-btn btn-orange" data-operation="-">−</button>
+
+          <!-- 4 ряд -->
+          <button class="calc-btn btn-light" data-number="1">1</button>
+          <button class="calc-btn btn-light" data-number="2">2</button>
+          <button class="calc-btn btn-light" data-number="3">3</button>
+          <button class="calc-btn btn-orange" data-operation="+">+</button>
+
+          <!-- нижний ряд -->
+          <button class="calc-btn btn-light zero-wide btn-pill" data-number="0">0</button>
+          <button class="calc-btn btn-light" data-number=".">.</button>
+          <button class="calc-btn btn-orange" data-action="equal">=</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Показ калькулятора по нажатию на кнопку
+    const showCalcBtn = document.getElementById('showCalcBtn');
+    const calculatorSection = document.getElementById('calculatorSection');
+
+    showCalcBtn.addEventListener('click', () => {
+      calculatorSection.style.display = 'flex';
+      calculatorSection.scrollIntoView({ behavior: 'smooth' });
+    });
+
+    // Логика калькулятора
+    const display = document.getElementById('display');
+    const calcButtons = document.querySelectorAll('.calc-btn');
+
+    let current = '0';
+    let previous = '';
+    let operation = null;
+    let shouldReset = false;
+
+    function updateDisplay() {
+      display.textContent = current || '0';
+    }
+
+    function appendNumber(num) {
+      if (num === '.') {
+        if (current.includes('.')) return;
+        if (shouldReset || current === '0') {
+          current = '0.';
+          shouldReset = false;
+          updateDisplay();
+          return;
+        }
+      }
+
+      if (current === '0' || shouldReset) {
+        current = num === '.' ? '0.' : num;
+        shouldReset = false;
+      } else {
+        current += num;
+      }
+      updateDisplay();
+    }
+
+    function chooseOperation(op) {
+      if (current === '' && previous === '') return;
+      if (previous !== '') {
+        compute();
+      } else {
+        previous = current;
+      }
+      operation = op;
+      shouldReset = true;
+    }
+
+    function compute() {
+      if (operation === null || previous === '' || current === '') return;
+
+      const prev = parseFloat(previous);
+      const curr = parseFloat(current);
+      if (isNaN(prev) || isNaN(curr)) return;
+
+      let result;
+      switch (operation) {
+        case '+': result = prev + curr; break;
+        case '-': result = prev - curr; break;
+        case '*': result = prev * curr; break;
+        case '/':
+          if (curr === 0) {
+            current = 'Ошибка';
+            previous = '';
+            operation = null;
+            shouldReset = true;
+            updateDisplay();
+            return;
+          }
+          result = prev / curr;
+          break;
+        default: return;
+      }
+
+      current = String(+result.toFixed(8))
+        .replace(/\.0+$/, '')
+        .replace(/(\.\d*?[1-9])0+$/, '$1');
+      previous = '';
+      operation = null;
+      shouldReset = true;
+      updateDisplay();
+    }
+
+    function clearAll() {
+      current = '0';
+      previous = '';
+      operation = null;
+      shouldReset = false;
+      updateDisplay();
+    }
+
+    function deleteDigit() {
+      if (shouldReset) {
+        current = '0';
+        shouldReset = false;
+      } else {
+        current = current.toString().slice(0, -1) || '0';
+      }
+      updateDisplay();
+    }
+
+    function toggleSign() {
+      if (current === '0' || current === 'Ошибка') return;
+      current = current.startsWith('-') ? current.slice(1) : '-' + current;
+      updateDisplay();
+    }
+
+    calcButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const number = btn.getAttribute('data-number');
+        const op = btn.getAttribute('data-operation');
+        const action = btn.getAttribute('data-action');
+
+        if (number !== null) {
+          appendNumber(number);
+          return;
+        }
+
+        if (op !== null) {
+          chooseOperation(op);
+          return;
+        }
+
+        if (action === 'clear') clearAll();
+        else if (action === 'delete') deleteDigit();
+        else if (action === 'sign') toggleSign();
+        else if (action === 'equal') compute();
+      });
+    });
+  </script>
+</body>
+</html>
